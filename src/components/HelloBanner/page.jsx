@@ -2,7 +2,7 @@ const HelloBanner = () => {
   return (
     <div className="flex flex-col gap-4 ">
       {/* View Store Logo */}
-      <div className="pl-10">
+      <div className="pl-2">
         <img src="/HelloBanner/view-store-logo.png" alt="View Store Logo" className="w-16 h-16 " />
       </div>
 

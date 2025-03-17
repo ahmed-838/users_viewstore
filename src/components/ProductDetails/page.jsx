@@ -1,94 +1,171 @@
 "use client"
 import React from 'react';
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
-import { mockProducts } from '@/data/products';
-import { mockOffers } from '@/data/offers';
+import { useParams, useRouter } from 'next/navigation';
+import axios from 'axios';
+import Config from '@/config/Config';
 
 const ProductDetails = () => {
   const params = useParams();
+  const router = useRouter();
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
   const [product, setProduct] = useState(null);
   const [isOffer, setIsOffer] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   
-  // إضافة مصفوفة الألوان الثابتة
-  const staticColors = [
-    { name: 'أسود', class: 'bg-black' },
-    { name: 'أبيض', class: 'bg-white border-2' },
-    { name: 'أحمر', class: 'bg-red-500' }
-  ];
+  // تعريف مصفوفة الألوان مع الترجمات العربية والفئات
+  const colorTranslations = {
+    black: { name: 'أسود', class: 'bg-black' },
+    white: { name: 'أبيض', class: 'bg-white border-2' },
+    red: { name: 'أحمر', class: 'bg-red-500' },
+    blue: { name: 'أزرق', class: 'bg-blue-500' },
+    green: { name: 'أخضر', class: 'bg-green-500' },
+    yellow: { name: 'أصفر', class: 'bg-yellow-400' },
+    gray: { name: 'رمادي', class: 'bg-gray-500' },
+    brown: { name: 'بني', class: 'bg-amber-800' },
+    navy: { name: 'كحلي', class: 'bg-indigo-900' },
+    beige: { name: 'بيج', class: 'bg-amber-100' }
+  };
 
   useEffect(() => {
-    const productId = parseInt(params.id);
-    console.log("Received ID:", productId, typeof productId);
-    
-    // تعديل طريقة البحث عن المنتج
-    const offerProduct = mockOffers.find(p => p.id === productId);
-    const regularProduct = mockProducts.find(p => p.id === productId);
+    const fetchProductDetails = async () => {
+      try {
+        setLoading(true);
+        const productId = params.id;
+        
+        // محاولة الحصول على المنتج من API العروض أولاً
+        try {
+          const offerResponse = await axios.get(`${Config.API_BASE_URL}/api/offers/${productId}`);
+          
+          if (offerResponse.data) {
+            setProduct(offerResponse.data);
+            setIsOffer(true);
+            setLoading(false);
+            return;
+          }
+        } catch (offerError) {
+        }
+        
+        // إذا لم يتم العثور على المنتج في العروض، نحاول في المنتجات العادية
+        try {
+          const productResponse = await axios.get(`${Config.API_BASE_URL}/api/products/${productId}`);
+          
+          if (productResponse.data.product) {
+            console.log("Found in regular products:", productResponse.data.product);
+            setProduct(productResponse.data.product);
+            setIsOffer(false);
+            setLoading(false);
+            return;
+          }
+        } catch (productError) {
+          console.error("Error fetching product:", productError);
+          setError("لم يتم العثور على المنتج");
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error("General error:", error);
+        setError("حدث خطأ أثناء تحميل المنتج");
+        setLoading(false);
+      }
+    };
 
-    // التحقق من مصدر المنتج باستخدام الفئة
-    if (regularProduct && regularProduct.category !== 'offers') {
-      console.log("Found in regular products:", regularProduct);
-      setProduct(regularProduct);
-      setIsOffer(false);
-    } else if (offerProduct && offerProduct.category === 'offers') {
-      console.log("Found in offers:", offerProduct);
-      setProduct(offerProduct);
-      setIsOffer(true);
+    if (params.id) {
+      fetchProductDetails();
     }
   }, [params.id]);
 
-  if (!product) {
-    return <div>جاري التحميل...</div>;
-  }
-
-  const sizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
-
   const buyProduct = () => {
-    const productUrl = window.location.href;
+    if (!selectedSize || !selectedColor) return;
     
-    // تجهيز نص الرسالة مع التحقق من وجود خصم
-    const message = `مرحباً، أريد شراء:
-${product.name}
-المقاس: ${selectedSize}
-اللون: ${selectedColor}
-${isOffer ? 
-  `السعر قبل الخصم: ${product.oldPrice} جنيه
-السعر بعد الخصم: ${product.newPrice} جنيه` : 
-  `السعر: ${product.price} جنيه`}
-
-رابط المنتج:
-${productUrl}`;
+    // الحصول على رابط المنتج الحالي
+    const productLink = window.location.href;
     
-    // ترميز النص للرابط
+    // تجهيز نص الرسالة للواتساب بشكل احترافي
+    const productName = product.name;
+    const productPrice = isOffer ? product.newPrice : product.price;
+    const productSize = selectedSize;
+    const productColor = colorTranslations[selectedColor]?.name || selectedColor;
+    
+    let message = `*طلب جديد من ViewStore*\n\n`;
+    message += `أرغب في شراء المنتج: *${productName}*\n`;
+    
+    // إضافة معلومات السعر والخصم إذا كان متوفرًا
+    if (isOffer) {
+      const discountPercentage = Math.round(((product.oldPrice - product.newPrice) / product.oldPrice) * 100);
+      message += `السعر بعد الخصم: *${product.newPrice} جنيه* بدلاً من ${product.oldPrice} جنيه\n`;
+      message += `نسبة الخصم: ${discountPercentage}%\n`;
+    } else {
+      message += `السعر: *${product.price} جنيه*\n`;
+    }
+    
+    message += `المقاس: *${productSize}*\n`;
+    message += `اللون: *${productColor}*\n\n`;
+    
+    // إضافة رابط المنتج
+    message += `رابط المنتج: ${productLink}\n\n`;
+    
+    message += `أرجو التواصل لإتمام عملية الشراء.\nشكراً لكم!`;
+    
+    // إنشاء رابط واتساب
+    const whatsappNumber = "201126711312"; // استبدل برقم الواتساب الخاص بك
     const encodedMessage = encodeURIComponent(message);
-    
-    // رقم الواتساب الخاص بالمتجر - قم بتغييره لرقم الواتساب الخاص بك
-    const phoneNumber = "201224900205"; // مثال: ضع رقم الهاتف الخاص بك هنا
+    const whatsappLink = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
     
     // فتح رابط الواتساب
-    window.open(`https://wa.me/${phoneNumber}?text=${encodedMessage}`, '_blank');
+    window.open(whatsappLink, '_blank');
   };
-  
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+
+  if (error || !product) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-4">
+        <p className="text-xl text-red-600 mb-4">{error || "لم يتم العثور على المنتج"}</p>
+        <button 
+          onClick={() => router.push('/')}
+          className="px-4 py-2 bg-black text-white rounded-lg"
+        >
+          العودة للصفحة الرئيسية
+        </button>
+      </div>
+    );
+  }
+
+  // تحضير الألوان المتاحة للمنتج
+  const availableColors = product.colors.map(colorId => {
+    return colorTranslations[colorId] || { name: colorId, class: 'bg-gray-300' };
+  });
+
   return (
-    <div className="min-h-screen bg-gray-50" dir="rtl">
-      {/* Header - تحسين شريط التنقل */}
-      <div className="fixed top-0 right-0 left-0 bg-white shadow-sm z-50">
-        <div className="max-w-xl mx-auto flex justify-between items-center p-4">
-          <img src="/HelloBanner/view-store-logo.png" alt="نايك" className="h-8" />
-          <div className="flex gap-4">
-            <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </button>
-            <button className="p-2 hover:bg-gray-100 rounded-full transition-colors relative">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-              </svg>
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">0</span>
-            </button>
+    <div dir="rtl" className="bg-gray-50 min-h-screen">
+      {/* Header */}
+      <div className="bg-white shadow-sm">
+        <div className="max-w-xl mx-auto px-4">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center">
+              <img 
+                src="/HelloBanner/view-store-logo.png" 
+                alt="ViewStore Logo" 
+                className=" h-10 object-contain" 
+                onClick={() => router.push('/')}
+              />
+            </div>
+            <div className="flex items-center">
+              <span 
+                className="font-bold text-xl cursor-pointer" 
+                onClick={() => router.push('/')}
+              >
+                ViewStore
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -96,12 +173,26 @@ ${productUrl}`;
       {/* Main Content */}
       <div className="max-w-xl mx-auto pt-20 pb-32">
         {/* Back Button and Title */}
-        <div className="mb-6">
-          <button className="flex items-center gap-2 text-sm hover:text-gray-600 transition-colors">
+        <div className="mb-6 flex items-center justify-between">
+          <button 
+            className="flex items-center gap-2 text-sm hover:text-gray-600 transition-colors"
+            onClick={() => router.back()}
+          >
             <svg className="w-5 h-5 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             <span className="font-semibold text-lg">{product.name}</span>
+          </button>
+          
+          {/* زر X للعودة للصفحة الرئيسية */}
+          <button 
+            className="pl-8 hover:bg-gray-100 rounded-full transition-colors"
+            onClick={() => router.push('/')}
+            title="العودة للصفحة الرئيسية"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
 
@@ -109,9 +200,12 @@ ${productUrl}`;
         <div className="mb-8 rounded-2xl overflow-hidden bg-white p-4">
           <div className="relative aspect-square">
             <img 
-              src={product.image}
+              src={`${Config.API_BASE_URL}${product.image}`}
               alt={product.name}
               className="w-full h-full object-cover rounded-xl"
+              onError={(e) => {
+                e.target.onerror = null;
+              }}
             />
             {isOffer && (
               <div className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1.5 rounded-full font-semibold">
@@ -158,8 +252,8 @@ ${productUrl}`;
           {/* Color Selection */}
           <div className="mb-8">
             <p className="text-sm font-semibold mb-3">اختر اللون</p>
-            <div className="flex gap-4">
-              {staticColors.map((color) => (
+            <div className="flex gap-4 flex-wrap">
+              {availableColors.map((color) => (
                 <button
                   key={color.name}
                   className={`group relative`}
@@ -176,6 +270,29 @@ ${productUrl}`;
               ))}
             </div>
           </div>
+
+          {/* Description if available */}
+          {product.description && (
+            <div className="mb-8">
+              <p className="text-sm font-semibold mb-2">وصف المنتج</p>
+              <p className="text-gray-600">{product.description}</p>
+            </div>
+          )}
+          
+          {/* Category if available */}
+          {product.category && !isOffer && (
+            <div className="mb-8">
+              <p className="text-sm font-semibold mb-2">الفئة</p>
+              <p className="text-gray-600">
+                {product.category === 'pants' && 'بناطيل'}
+                {product.category === 'shirts' && 'تيشرت'}
+                {product.category === 'hoodies' && 'هوديز'}
+                {product.category === 'boxers' && 'بوكسر'}
+                {product.category === 'undershirt' && 'فانلة داخلية'}
+                {product.category === 'underwear' && 'طقم داخلي'}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Fixed Bottom Bar */}
