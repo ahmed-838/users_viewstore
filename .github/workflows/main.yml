@@ -14,20 +14,25 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # استخدام طريقة أخرى لإعداد SSH
-      - name: Configure SSH
+      # إعداد مفتاح SSH بتنسيق PEM
+      - name: Setup SSH key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/ec2.pem
+          chmod 600 ~/.ssh/ec2.pem
+          echo "Host ${{ secrets.EC2_HOST }}" > ~/.ssh/config
+          echo "  HostName ${{ secrets.EC2_HOST }}" >> ~/.ssh/config
+          echo "  User ${{ secrets.EC2_USER }}" >> ~/.ssh/config
+          echo "  IdentityFile ~/.ssh/ec2.pem" >> ~/.ssh/config
+          echo "  StrictHostKeyChecking no" >> ~/.ssh/config
+          cat ~/.ssh/config
 
       # 4. نسخ الملفات إلى الـ EC2
       - name: Copy files to EC2
         run: |
-          scp -r ./* ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:${{ secrets.EC2_PATH }}
+          scp -i ~/.ssh/ec2.pem -r ./* ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:${{ secrets.EC2_PATH }}
 
       # 5. تشغيل ملف deploy.sh على الـ EC2
       - name: Run deploy script
         run: |
-          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} 'cd ${{ secrets.EC2_PATH }} && bash deploy.sh'
+          ssh -i ~/.ssh/ec2.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} 'cd ${{ secrets.EC2_PATH }} && bash deploy.sh'
