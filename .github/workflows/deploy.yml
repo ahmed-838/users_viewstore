@@ -3,30 +3,26 @@ name: Deploy to EC2
 on:
   push:
     branches:
-      - main  # change "main" to the branch you want to deploy to
+      - main 
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. checkout the code from the repository
       - name: Checkout code
         uses: actions/checkout@v2
 
-      # 2. install the SSH key to connect to the EC2
       - name: Install SSH key
         uses: shimataro/ssh-key-action@v2
         with:
-          key: ${{ secrets.EC2_SSH_KEY }}
+          key: ${{ secrets.EC2_SSH_KEY }}  
           known_hosts: 'just-a-placeholder-so-we-dont-get-errors'
 
-        # 3. copy the files to the EC2
       - name: Copy files to EC2
         run: |
-          scp -o StrictHostKeyChecking=no -i ~/.ssh/private-key.pem -r . ubuntu@16.171.139.136:/viewstore_V3/viewstore_V3_user
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/private-key.pem -r . ubuntu@54.123.45.67:/path/to/your/project
 
-      # 4. Run deploy.sh on EC2
       - name: Run deploy script
         run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/private-key.pem ubuntu@your-ec2-ip 'cd /path/to/your/project && bash deploy.sh'
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/private-key.pem ubuntu@54.123.45.67 'cd /path/to/your/project && bash deploy.sh'
