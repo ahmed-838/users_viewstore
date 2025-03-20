@@ -12,21 +12,27 @@ jobs:
     steps:
       # 1. تحميل الكود من الـ repository
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       # 2. تثبيت الـ SSH key للاتصال بالـ EC2
       - name: Install SSH key
         uses: shimataro/ssh-key-action@v2
         with:
           key: ${{ secrets.EC2_SSH_KEY }}  # هنا بنستخدم الـ secret
-          known_hosts: 'just-a-placeholder-so-we-dont-get-errors'
+          name: id_rsa  # اسم ملف المفتاح
+          known_hosts: ${{ secrets.EC2_KNOWN_HOSTS }}  # إضافة known_hosts
+          if_key_exists: replace  # استبدال المفتاح إذا كان موجودًا
 
-      # 3. نسخ الملفات إلى الـ EC2
+      # 3. إضافة الخادم إلى known_hosts
+      - name: Add host to known_hosts
+        run: ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      # 4. نسخ الملفات إلى الـ EC2
       - name: Copy files to EC2
         run: |
-          scp -o StrictHostKeyChecking=no -i ~/.ssh/private-key.pem -r . ubuntu@54.123.45.67:/path/to/your/project
+          scp -o StrictHostKeyChecking=no -r ./* ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:${{ secrets.EC2_PATH }}
 
-      # 4. تشغيل ملف deploy.sh على الـ EC2
+      # 5. تشغيل ملف deploy.sh على الـ EC2
       - name: Run deploy script
         run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/private-key.pem ubuntu@54.123.45.67 'cd /path/to/your/project && bash deploy.sh'
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} 'cd ${{ secrets.EC2_PATH }} && bash deploy.sh'
