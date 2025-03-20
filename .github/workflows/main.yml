@@ -1,0 +1,32 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main  # غير "main" لو عندك branch تاني
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. تحميل الكود من الـ repository
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # 2. تثبيت الـ SSH key للاتصال بالـ EC2
+      - name: Install SSH key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.EC2_SSH_KEY }}  # هنا بنستخدم الـ secret
+          known_hosts: 'just-a-placeholder-so-we-dont-get-errors'
+
+      # 3. نسخ الملفات إلى الـ EC2
+      - name: Copy files to EC2
+        run: |
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/private-key.pem -r . ubuntu@54.123.45.67:/path/to/your/project
+
+      # 4. تشغيل ملف deploy.sh على الـ EC2
+      - name: Run deploy script
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/private-key.pem ubuntu@54.123.45.67 'cd /path/to/your/project && bash deploy.sh'
