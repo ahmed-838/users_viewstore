@@ -34,10 +34,9 @@ const OffersPage = () => {
   const handleProductClick = (product) => {
     // تأكد من أن المعرف موجود قبل التوجيه
     if (product && product._id) {
-      console.log(`توجيه إلى تفاصيل المنتج: ${product._id}`);
       router.push(`/ProductDetails/${product._id}`);
     } else {
-      console.error('معرف المنتج غير موجود:', product);
+      console.error('Product ID is missing:', product);
     }
   };
 
