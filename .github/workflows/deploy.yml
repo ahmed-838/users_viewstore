@@ -24,7 +24,7 @@ jobs:
         # 3. copy the files to the EC2
       - name: Copy files to EC2
         run: |
-          scp -o StrictHostKeyChecking=no -i ~/.ssh/private-key.pem -r . ubuntu@your-ec2-ip:/path/to/your/project
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/private-key.pem -r . ubuntu@16.171.139.136:/viewstore_V3/viewstore_V3_user
 
       # 4. Run deploy.sh on EC2
       - name: Run deploy script
