@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import axios from 'axios';
 import Config from '@/config/Config';
+// Import mock data
+import { getProductById, getOfferById } from '@/data/mockData';
 
 const ProductDetails = () => {
   const params = useParams();
@@ -36,34 +38,62 @@ const ProductDetails = () => {
         setLoading(true);
         const productId = params.id;
         
-        // محاولة الحصول على المنتج من API العروض أولاً
-        try {
-          const offerResponse = await axios.get(`${Config.API_BASE_URL}/api/offers/${productId}`);
+        if (Config.IS_MOCK) {
+          // Check for offer first in mock data
+          const offerData = getOfferById(productId);
           
-          if (offerResponse.data) {
-            setProduct(offerResponse.data);
+          if (offerData) {
+            setProduct(offerData);
             setIsOffer(true);
             setLoading(false);
             return;
           }
-        } catch (offerError) {
-        }
-        
-        // إذا لم يتم العثور على المنتج في العروض، نحاول في المنتجات العادية
-        try {
-          const productResponse = await axios.get(`${Config.API_BASE_URL}/api/products/${productId}`);
           
-          if (productResponse.data.product) {
-            console.log("Found in regular products:", productResponse.data.product);
-            setProduct(productResponse.data.product);
+          // If not an offer, check products
+          const productData = getProductById(productId);
+          
+          if (productData) {
+            setProduct(productData);
             setIsOffer(false);
             setLoading(false);
             return;
           }
-        } catch (productError) {
-          console.error("Error fetching product:", productError);
+          
+          // If product not found
           setError("لم يتم العثور على المنتج");
           setLoading(false);
+          return;
+        } else {
+          // Original API code (kept for reference)
+          // محاولة الحصول على المنتج من API العروض أولاً
+          try {
+            const offerResponse = await axios.get(`${Config.API_BASE_URL}/api/offers/${productId}`);
+            
+            if (offerResponse.data) {
+              setProduct(offerResponse.data);
+              setIsOffer(true);
+              setLoading(false);
+              return;
+            }
+          } catch (offerError) {
+          }
+          
+          // إذا لم يتم العثور على المنتج في العروض، نحاول في المنتجات العادية
+          try {
+            const productResponse = await axios.get(`${Config.API_BASE_URL}/api/products/${productId}`);
+            
+            if (productResponse.data.product) {
+              console.log("Found in regular products:", productResponse.data.product);
+              setProduct(productResponse.data.product);
+              setIsOffer(false);
+              setLoading(false);
+              return;
+            }
+          } catch (productError) {
+            console.error("Error fetching product:", productError);
+            setError("لم يتم العثور على المنتج");
+            setLoading(false);
+          }
         }
       } catch (error) {
         console.error("General error:", error);
@@ -113,7 +143,7 @@ const ProductDetails = () => {
     message += `أرجو التواصل لإتمام عملية الشراء.\nشكراً لكم!`;
     
     // إنشاء رابط واتساب
-    const whatsappNumber = "201126711312"; // استبدل برقم الواتساب الخاص بك
+    const whatsappNumber = "201224900205"; // استبدل برقم الواتساب الخاص بك
     const encodedMessage = encodeURIComponent(message);
     const whatsappLink = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
     
@@ -176,7 +206,7 @@ const ProductDetails = () => {
             
             <div className="flex items-center">
               <img 
-                src="/HelloBanner/view-store-logo.png" 
+                src="https://via.placeholder.com/150x50?text=ViewStore" 
                 alt="ViewStore Logo" 
                 className="h-8 object-contain cursor-pointer" 
                 onClick={() => router.push('/')}
@@ -202,11 +232,12 @@ const ProductDetails = () => {
         <div className="mb-6 bg-white">
           <div className="relative aspect-square">
             <img 
-              src={`${Config.API_BASE_URL}${product.image}`}
-              alt={product.name}
+              src={product?.image || 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?q=80&w=720&auto=format&fit=crop'}
+              alt={product?.name}
               className="w-full h-full object-contain"
               onError={(e) => {
                 e.target.onerror = null;
+                e.target.src = 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?q=80&w=720&auto=format&fit=crop';
               }}
             />
             {isOffer && (

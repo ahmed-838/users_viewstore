@@ -6,6 +6,8 @@ import axios from 'axios';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import ErrorMessage from '@/components/ui/ErrorMessage';
 import Config from '@/config/Config';
+// Import mock data
+import { offers as mockOffers } from '@/data/mockData';
 
 const OffersPage = () => {
   const router = useRouter();
@@ -17,13 +19,22 @@ const OffersPage = () => {
     const fetchOffers = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`${Config.API_BASE_URL}/api/offers`);
-        setOffers(response.data);
-        setError(null);
+        
+        if (Config.IS_MOCK) {
+          // Use mock data
+          setOffers(mockOffers);
+          setError(null);
+          setLoading(false);
+        } else {
+          // Use real API
+          const response = await axios.get(`${Config.API_BASE_URL}/api/offers`);
+          setOffers(response.data);
+          setError(null);
+          setLoading(false);
+        }
       } catch (err) {
         console.error('فشل في جلب العروض:', err);
         setError('حدث خطأ أثناء تحميل العروض. يرجى المحاولة مرة أخرى لاحقًا.');
-      } finally {
         setLoading(false);
       }
     };
@@ -33,8 +44,9 @@ const OffersPage = () => {
 
   const handleProductClick = (product) => {
     // تأكد من أن المعرف موجود قبل التوجيه
-    if (product && product._id) {
-      router.push(`/ProductDetails/${product._id}`);
+    if (product && (product._id || product.id)) {
+      const productId = product._id || product.id;
+      router.push(`/ProductDetails/${productId}`);
     } else {
       console.error('Product ID is missing:', product);
     }
@@ -93,22 +105,18 @@ const OffersPage = () => {
           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-5">
             {offers.map((product) => (
               <article 
-                key={product._id} 
+                key={product._id || product.id} 
                 className="group bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-all"
                 onClick={() => handleProductClick(product)}
               >
                 <div className="aspect-square overflow-hidden bg-gray-50 relative">
                   <img 
-                    src={product.image 
-                      ? (product.image.startsWith('http') 
-                        ? product.image 
-                        : `${Config.API_BASE_URL}/${product.image.replace(/^\//, '')}`) 
-                      : ''} 
+                    src={product.image || 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?q=80&w=720&auto=format&fit=crop'} 
                     alt={product.name || 'صورة المنتج'} 
                     className="w-full h-full object-contain transition duration-500 ease-in-out group-hover:scale-105"
                     onError={(e) => {
-                      console.error(`خطأ في تحميل الصورة: ${product.image}`);
-                      e.target.src = ''; 
+                      e.target.onerror = null;
+                      e.target.src = 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?q=80&w=720&auto=format&fit=crop'; 
                     }}
                   />
                   <div className="absolute top-0 right-0 bg-gradient-to-l from-red-600 to-red-500 text-white text-xs font-bold px-4 py-1.5 rounded-bl-lg">

@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import Config from '@/config/Config'; 
+// Import mock data
+import { outerCategories, getOuterCategoryProducts } from '@/data/categoryData';
 
 const OuterCategories = () => {
   const router = useRouter();
@@ -14,58 +16,79 @@ const OuterCategories = () => {
   const [showAll, setShowAll] = useState(false);
   const [allProducts, setAllProducts] = useState([]);
 
-  const categories = [
-    { id: 1, name: 'الكل', value: 'all' },
-    { id: 2, name: 'بنطلون', value: 'pants' },
-    { id: 3, name: 'تيشرت', value: 'shirts' },
-    { id: 4, name: 'هودي', value: 'hoodies' }
-  ];
-
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
         setShowAll(false);
-        const API_URL = `${Config.API_BASE_URL}/api/products`;
         
-        if (selectedCategory === 'all') {
-          // نجلب منتجات من كل فئة خارجية بشكل منفصل
-          const pantsResponse = await axios.get(`${API_URL}?category=pants`);
-          const shirtsResponse = await axios.get(`${API_URL}?category=shirts`);
-          const hoodiesResponse = await axios.get(`${API_URL}?category=hoodies`);
+        if (Config.IS_MOCK) {
+          // Using mock data
+          const productsData = getOuterCategoryProducts(selectedCategory);
           
-          const pantsProducts = pantsResponse.data.products || [];
-          const shirtsProducts = shirtsResponse.data.products || [];
-          const hoodiesProducts = hoodiesResponse.data.products || [];
-          
-          // نجمع كل المنتجات
-          const allProductsData = [
-            ...pantsProducts,
-            ...shirtsProducts,
-            ...hoodiesProducts
-          ];
-          
-          // نحفظ كل المنتجات
-          setAllProducts(allProductsData);
-          
-          // نأخذ منتج واحد من كل فئة للعرض المبدئي
-          const initialProducts = [
-            ...(pantsProducts.length > 0 ? [pantsProducts[0]] : []),
-            ...(shirtsProducts.length > 0 ? [shirtsProducts[0]] : []),
-            ...(hoodiesProducts.length > 0 ? [hoodiesProducts[0]] : [])
-          ];
-          
-          setProducts(initialProducts);
-        } else {
-          const url = `${API_URL}?category=${selectedCategory}`;
-          const response = await axios.get(url);
-          const productsData = response.data.products || [];
-          
-          // نحفظ كل المنتجات
+          // Save all products
           setAllProducts(productsData);
           
-          // نعرض أول 4 منتجات فقط في البداية
-          setProducts(productsData.slice(0, 4));
+          // If all categories selected, show one product from each category
+          if (selectedCategory === 'all') {
+            const shirtsProduct = getOuterCategoryProducts('shirts')[0];
+            const pantsProduct = getOuterCategoryProducts('pants')[0];
+            const hoodiesProduct = getOuterCategoryProducts('hoodies')[0];
+            
+            const initialProducts = [
+              shirtsProduct, 
+              pantsProduct,
+              hoodiesProduct
+            ].filter(Boolean); // Filter out undefined items
+            
+            setProducts(initialProducts);
+          } else {
+            // Show first 4 products initially
+            setProducts(productsData.slice(0, 4));
+          }
+        } else {
+          // Original API code
+          const API_URL = `${Config.API_BASE_URL}/api/products`;
+          
+          if (selectedCategory === 'all') {
+            // نجلب منتجات من كل فئة خارجية بشكل منفصل
+            const pantsResponse = await axios.get(`${API_URL}?category=pants`);
+            const shirtsResponse = await axios.get(`${API_URL}?category=shirts`);
+            const hoodiesResponse = await axios.get(`${API_URL}?category=hoodies`);
+            
+            const pantsProducts = pantsResponse.data.products || [];
+            const shirtsProducts = shirtsResponse.data.products || [];
+            const hoodiesProducts = hoodiesResponse.data.products || [];
+            
+            // نجمع كل المنتجات
+            const allProductsData = [
+              ...pantsProducts,
+              ...shirtsProducts,
+              ...hoodiesProducts
+            ];
+            
+            // نحفظ كل المنتجات
+            setAllProducts(allProductsData);
+            
+            // نأخذ منتج واحد من كل فئة للعرض المبدئي
+            const initialProducts = [
+              ...(pantsProducts.length > 0 ? [pantsProducts[0]] : []),
+              ...(shirtsProducts.length > 0 ? [shirtsProducts[0]] : []),
+              ...(hoodiesProducts.length > 0 ? [hoodiesProducts[0]] : [])
+            ];
+            
+            setProducts(initialProducts);
+          } else {
+            const url = `${API_URL}?category=${selectedCategory}`;
+            const response = await axios.get(url);
+            const productsData = response.data.products || [];
+            
+            // نحفظ كل المنتجات
+            setAllProducts(productsData);
+            
+            // نعرض أول 4 منتجات فقط في البداية
+            setProducts(productsData.slice(0, 4));
+          }
         }
         
         setError(null);
@@ -86,7 +109,7 @@ const OuterCategories = () => {
   };
 
   const handleProductClick = (product) => {
-    router.push(`/ProductDetails/${product._id}`);
+    router.push(`/ProductDetails/${product._id || product.id}`);
   };
 
   return (
@@ -104,7 +127,7 @@ const OuterCategories = () => {
         {/* شريط التصنيفات */}
         <div className="relative mb-8 border-b border-gray-200">
           <div className="flex flex-row overflow-x-auto no-scrollbar" dir="rtl">
-            {categories.map((category) => (
+            {outerCategories.map((category) => (
               <button
                 key={category.id}
                 className={`px-6 py-3 text-sm md:text-base transition-all duration-300 relative shrink-0
@@ -138,18 +161,18 @@ const OuterCategories = () => {
               <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-5">
                 {products.map((product) => (
                   <article 
-                    key={product._id} 
+                    key={product._id || product.id} 
                     className="group bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-all"
                     onClick={() => handleProductClick(product)}
                   >
                     <div className="aspect-square overflow-hidden bg-gray-50 relative">
                       <img 
-                        src={`${Config.API_BASE_URL}${product.image}`} 
+                        src={product.image || 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?q=80&w=720&auto=format&fit=crop'} 
                         alt={product.name} 
                         className="w-full h-full object-contain transition duration-500 ease-in-out group-hover:scale-105"
                         onError={(e) => {
-                          console.error(`خطأ في تحميل الصورة: ${product.image}`);
-                          e.target.src = ''; 
+                          e.target.onerror = null;
+                          e.target.src = 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?q=80&w=720&auto=format&fit=crop'; 
                         }}
                       />
                       {product.isNew && (
@@ -202,9 +225,7 @@ const OuterCategories = () => {
                       </div>
                       
                       <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-100">
-                        <div className="flex flex-col">
-                          <span className="text-blue-600 font-bold text-base md:text-lg">{product.price} جنيه</span>
-                        </div>
+                        <span className="text-blue-600 font-bold text-base md:text-lg">{product.price} جنيه</span>
                         <button className="bg-gray-100 hover:bg-gray-200 p-1.5 rounded-full transition-colors">
                           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
@@ -220,10 +241,10 @@ const OuterCategories = () => {
               {!showAll && allProducts.length > products.length && (
                 <div className="flex justify-center mt-8">
                   <button 
+                    className="px-6 py-2 bg-transparent border border-blue-500 text-blue-500 rounded-lg hover:bg-blue-50 transition-colors text-sm font-medium"
                     onClick={handleShowMore}
-                    className="bg-white text-blue-600 border border-blue-600 hover:bg-blue-50 font-medium rounded-lg px-6 py-2.5 transition-colors"
                   >
-                    عرض المزيد
+                    عرض المزيد من المنتجات
                   </button>
                 </div>
               )}

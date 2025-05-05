@@ -1,36 +1,87 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ViewStore Frontend
 
-## Getting Started
+هذا المشروع هو واجهة المستخدم لمتجر الملابس "ViewStore" مع بيانات وهمية للعرض.
 
-First, run the development server:
+## نظرة عامة
 
+- تطبيق Next.js لمتجر ملابس بواجهة عربية
+- يستخدم بيانات وهمية بدلاً من الاتصال بـ API خلفي
+- مناسب للعرض والتطوير المحلي
+- جاهز للنشر على Vercel
+
+## المميزات
+
+- عرض منتجات من فئات مختلفة (ملابس داخلية وخارجية)
+- صفحة تفاصيل المنتج مع إمكانية الطلب عبر واتساب
+- عروض خاصة مميزة
+- تصميم متجاوب مع جميع أحجام الشاشات
+
+## متطلبات التشغيل
+
+- Node.js (الإصدار 14 أو أحدث)
+- npm أو yarn
+
+## التثبيت
+
+1. قم بتنزيل أو استنساخ المشروع:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone [رابط المستودع]
+cd viewstore-frontend
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. قم بتثبيت الاعتمادات:
+```bash
+npm install
+# أو
+yarn install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. قم بتشغيل خادم التطوير:
+```bash
+npm run dev
+# أو
+yarn dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. افتح متصفحك على العنوان: [http://localhost:3000](http://localhost:3000)
 
-## Learn More
+## هيكل المشروع
 
-To learn more about Next.js, take a look at the following resources:
+- `src/app/` - صفحات التطبيق الرئيسية
+- `src/components/` - مكونات واجهة المستخدم
+- `src/data/` - البيانات الوهمية للمنتجات والفئات
+- `src/config/` - إعدادات التطبيق
+- `public/` - الملفات العامة (الصور وغيرها)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## إضافة صور المنتجات
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+لاستخدام صور المنتجات الخاصة بك:
 
-## Deploy on Vercel
+1. أضف صور المنتجات العادية في المجلد: `public/images/products/`
+2. أضف صور العروض في المجلد: `public/images/offers/`
+3. أضف صورة بديلة في: `public/images/placeholder.jpg`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## النشر على Vercel
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+يمكنك نشر هذا المشروع مباشرة على Vercel:
+
+1. قم بإنشاء حساب على [Vercel](https://vercel.com) إذا لم يكن لديك واحد
+2. اربط مستودع GitHub الخاص بك
+3. قم بتكوين المشروع واضغط على "Deploy"
+
+## تخصيص البيانات الوهمية
+
+لتعديل البيانات الوهمية:
+
+1. قم بتعديل ملفات البيانات في `src/data/`
+2. أضف أو عدل المنتجات في الملفات:
+   - `mockData.js` - للعروض والمنتجات الرئيسية
+   - `categoryData.js` - لبيانات الفئات والمنتجات المرتبطة بها
+
+## المساهمة
+
+نرحب بالمساهمات! يرجى قراءة [دليل المساهمة](CONTRIBUTING.md) للحصول على التفاصيل.
+
+## الترخيص
+
+هذا المشروع مرخص بموجب [MIT License](LICENSE).

@@ -1,7 +1,8 @@
 const Config = {
-  // API_BASE_URL: 'http://192.168.156.68:4444',
-  API_BASE_URL: 'https://api.viewstore.shop'
-  
+  // Using mock data instead of API for Vercel deployment
+  IS_MOCK: true,
+  // Legacy API URL (not used with mock data)
+  API_BASE_URL: ''
 };
 
 export default Config;
